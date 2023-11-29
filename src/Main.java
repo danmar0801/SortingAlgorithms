@@ -1,41 +1,31 @@
-import java.util.List;
+class Algo1 {
+    private int[] arr; // Array to be sorted
 
-import static java.util.Arrays.sort;
 
-class MergeSort {
-    private int arr[]; // array to be sorted
-    int l;
-    int r;
-    MergeSort(int arr[]){
+
+    int kElement;
+
+    public Algo1(int[] arr, int k) {
         this.arr = arr;
-        this.l = 0;
-        this.r = arr.length -1;
-        sort(arr, l, r);
-
+        sort(this.arr, 0, this.arr.length - 1);
+        this.kElement = arr[k-1];
     }
+    public int getkElement() {
+        return kElement;
+    }
+    private void merge(int[] arr, int left, int middle, int right) {
+        int n1 = middle - left + 1;
+        int n2 = right - middle;
 
-    private void merge(int arr[], int l, int m, int r){
-        // Find sizes of two subarrays to be merged
-        int n1 = m - l + 1;
-        int n2 = r - m;
+        int[] L = new int[n1];
+        int[] R = new int[n2];
 
-        /* Create temp arrays */
-        int L[] = new int[n1];
-        int R[] = new int[n2];
+        System.arraycopy(arr, left, L, 0, n1);
+        System.arraycopy(arr, middle + 1, R, 0, n2);
 
-        /*Copy data to temp arrays*/
-        for (int i = 0; i < n1; ++i)
-            L[i] = arr[l + i];
-        for (int j = 0; j < n2; ++j)
-            R[j] = arr[m + 1 + j];
-
-        /* Merge the temp arrays */
-
-        // Initial indexes of first and second subarrays
         int i = 0, j = 0;
+        int k = left;
 
-        // Initial index of merged subarray array
-        int k = l;
         while (i < n1 && j < n2) {
             if (L[i] <= R[j]) {
                 arr[k] = L[i];
@@ -47,63 +37,77 @@ class MergeSort {
             k++;
         }
 
-        /* Copy remaining elements of L[] if any */
-        while (i < n1) {
-            arr[k] = L[i];
-            i++;
-            k++;
-        }
-
-        /* Copy remaining elements of R[] if any */
-        while (j < n2) {
-            arr[k] = R[j];
-            j++;
-            k++;
-        }
-
+        System.arraycopy(L, i, arr, k, n1 - i);
+        System.arraycopy(R, j, arr, k, n2 - j);
     }
-    public void sort(int arr[], int l, int r){
-        if (l < r) {
-            // Find the middle point
-            int m = (l + r) / 2;
 
-            // Sort first and second halves
-            sort(arr, l, m);
-            sort(arr, m + 1, r);
-
-            // Merge the sorted halves
-            merge(arr, l, m, r);
+    private void sort(int[] arr, int left, int right) {
+        if (left < right) {
+            int middle = left + (right - left) / 2;
+            sort(arr, left, middle);
+            sort(arr, middle + 1, right);
+            merge(arr, left, middle, right);
         }
-
     }
-    public void printArray(){
-        int n = arr.length;
-        for (int i = 0; i < n; ++i)
-            System.out.print(arr[i] + " ");
+
+    public void printArray() {
+        for (int value : arr) {
+            System.out.print(value + " ");
+        }
         System.out.println();
     }
 }
 
+class QuickSelect {
+    public static int quickSelect(int[] arr, int low, int high, int k) {
+        if (low == high) {
+            return arr[low];
+        }
+
+        int pivotIndex = partition(arr, low, high);
+        if (k == pivotIndex) {
+            return arr[k];
+        } else if (k < pivotIndex) {
+            return quickSelect(arr, low, pivotIndex - 1, k);
+        } else {
+            return quickSelect(arr, pivotIndex + 1, high, k);
+        }
+    }
+
+    private static int partition(int[] arr, int low, int high) {
+        int pivot = arr[high];
+        int i = low - 1;
+        for (int j = low; j < high; j++) {
+            if (arr[j] < pivot) {
+                i++;
+                swap(arr, i, j);
+            }
+        }
+        swap(arr, i + 1, high);
+        return i + 1;
+    }
+
+    private static void swap(int[] arr, int i, int j) {
+        int temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
+    }
+}
+
+class QuickSelectMM{
+
+}
+
 public class Main {
-
-    // method to find k'th smallest element
-    static int returnK(int arr[], int k){
-        return arr[k];
-    }
-    static boolean testAlgos(Object algoSort, int arr[], int k, int o){
-        int element = arr[k];
-        if (element == o){return true;}
-        return false;
-
-    }
-
     public static void main(String[] args) {
-        int arr[] = {12, 11, 13, 5, 6, 7};
-        MergeSort merge = new MergeSort(arr);
-        testAlgos(merge, arr,3, 7);
-        merge.printArray();
-        System.out.println(testAlgos(merge, arr,3, 11));
-        System.out.println(returnK(arr,3));
+        int k = 3;
+        int[] arr = {12, 11, 13, 5, 6, 7};
+        Algo1 algo1 = new Algo1(arr, 3);
+        algo1.printArray();
+        System.out.println("The " + k + "th smallest element is: " + algo1.getkElement());
 
+
+        int kthSmallest = QuickSelect.quickSelect(arr, 0, arr.length - 1, k - 1);
+        System.out.println("The " + k + "th smallest element is: " + kthSmallest);
     }
 }
