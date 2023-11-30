@@ -3,7 +3,7 @@ import java.util.Arrays;
 class MedianOfMedians {
     // Main function to find the kth smallest element in a given array.
     // It uses the Median of Medians algorithm for a worst-case linear time.
-    public static int getKth(int arr[], int low, int high, int k) {
+    public static int getKth(int[] arr, int low, int high, int k) {
 
         // Check if k is within the bounds of the array
         if (k > 0 && k <= high - low + 1) {
@@ -11,7 +11,8 @@ class MedianOfMedians {
             int n = high - low + 1;
 
             // Create an array to store the medians of all the groups
-            int i, median[] = new int[(n + 4) / 5];
+            int i;
+            int[] median = new int[(n + 4) / 5];
 
             // Divide the array into groups of 5 and find their medians
             for (i = 0; i < median.length - 1; i++) {
@@ -21,11 +22,10 @@ class MedianOfMedians {
             // Handling the last group which may have less than 5 elements
             if (n % 5 == 0) {
                 median[i] = getMedian(Arrays.copyOfRange(arr, 5 * i + low, 5 * i + low + 4), 5);
-                i++;
             } else {
                 median[i] = getMedian(Arrays.copyOfRange(arr, 5 * i + low, 5 * i + low + (n % 5)), n % 5);
-                i++;
             }
+            i++;
 
             // Find the median of the medians using recursive call
             int medOfMed = i == 1 ? median[i - 1]
@@ -52,7 +52,7 @@ class MedianOfMedians {
     }
 
     // Helper function to find the median of a small array (up to 5 elements)
-    private static int getMedian(int arr[], int n) {
+    private static int getMedian(int[] arr, int n) {
         Arrays.sort(arr);
         return arr[n / 2];
     }
@@ -100,7 +100,6 @@ class MedianOfMedians {
 
 public class Main {
     public static void main(String[] args) {
-        MedianOfMedians finder = new MedianOfMedians();
 
         // Example array
         int[] arr = {7, 10, 4, 3, 20, 15};
@@ -109,7 +108,7 @@ public class Main {
         int k = 3; // For example, find the 3rd smallest element
 
         // Call the method and store the result
-        int kthSmallest = finder.getKth(arr,0, arr.length - 1, k);
+        int kthSmallest = MedianOfMedians.getKth(arr,0, arr.length - 1, k);
 
         // Output the result
         System.out.println("The " + k + "th smallest element is: " + kthSmallest);
