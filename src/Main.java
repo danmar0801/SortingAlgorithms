@@ -1,113 +1,117 @@
-class Algo1 {
-    private int[] arr; // Array to be sorted
+import java.util.Arrays;
 
+class MedianOfMedians {
+    // Main function to find the kth smallest element in a given array.
+    // It uses the Median of Medians algorithm for a worst-case linear time.
+    public static int getKth(int arr[], int low, int high, int k) {
 
+        // Check if k is within the bounds of the array
+        if (k > 0 && k <= high - low + 1) {
+            // Calculate the number of elements in the current array segment
+            int n = high - low + 1;
 
-    int kElement;
+            // Create an array to store the medians of all the groups
+            int i, median[] = new int[(n + 4) / 5];
 
-    public Algo1(int[] arr, int k) {
-        this.arr = arr;
-        sort(this.arr, 0, this.arr.length - 1);
-        this.kElement = arr[k-1];
-    }
-    public int getkElement() {
-        return kElement;
-    }
-    private void merge(int[] arr, int left, int middle, int right) {
-        int n1 = middle - left + 1;
-        int n2 = right - middle;
+            // Divide the array into groups of 5 and find their medians
+            for (i = 0; i < median.length - 1; i++) {
+                median[i] = getMedian(Arrays.copyOfRange(arr, 5 * i + low, 5 * i + low + 4), 5);
+            }
 
-        int[] L = new int[n1];
-        int[] R = new int[n2];
-
-        System.arraycopy(arr, left, L, 0, n1);
-        System.arraycopy(arr, middle + 1, R, 0, n2);
-
-        int i = 0, j = 0;
-        int k = left;
-
-        while (i < n1 && j < n2) {
-            if (L[i] <= R[j]) {
-                arr[k] = L[i];
+            // Handling the last group which may have less than 5 elements
+            if (n % 5 == 0) {
+                median[i] = getMedian(Arrays.copyOfRange(arr, 5 * i + low, 5 * i + low + 4), 5);
                 i++;
             } else {
-                arr[k] = R[j];
-                j++;
-            }
-            k++;
-        }
-
-        System.arraycopy(L, i, arr, k, n1 - i);
-        System.arraycopy(R, j, arr, k, n2 - j);
-    }
-
-    private void sort(int[] arr, int left, int right) {
-        if (left < right) {
-            int middle = left + (right - left) / 2;
-            sort(arr, left, middle);
-            sort(arr, middle + 1, right);
-            merge(arr, left, middle, right);
-        }
-    }
-
-    public void printArray() {
-        for (int value : arr) {
-            System.out.print(value + " ");
-        }
-        System.out.println();
-    }
-}
-
-class QuickSelect {
-    public static int quickSelect(int[] arr, int low, int high, int k) {
-        if (low == high) {
-            return arr[low];
-        }
-
-        int pivotIndex = partition(arr, low, high);
-        if (k == pivotIndex) {
-            return arr[k];
-        } else if (k < pivotIndex) {
-            return quickSelect(arr, low, pivotIndex - 1, k);
-        } else {
-            return quickSelect(arr, pivotIndex + 1, high, k);
-        }
-    }
-
-    private static int partition(int[] arr, int low, int high) {
-        int pivot = arr[high];
-        int i = low - 1;
-        for (int j = low; j < high; j++) {
-            if (arr[j] < pivot) {
+                median[i] = getMedian(Arrays.copyOfRange(arr, 5 * i + low, 5 * i + low + (n % 5)), n % 5);
                 i++;
-                swap(arr, i, j);
+            }
+
+            // Find the median of the medians using recursive call
+            int medOfMed = i == 1 ? median[i - 1]
+                    : getKth(median, 0, i - 1, i / 2);
+
+            // Partition the array around the median of medians
+            int partition = partitionPractise(arr, low, high, medOfMed);
+
+            // Check if we found the kth element
+            if (partition - low == k - 1) {
+                return arr[partition];
+            }
+
+            // Decide which part of the array to search next
+            if (partition - low > k - 1) {
+                return getKth(arr, low, partition - 1, k);
+            }
+
+            return getKth(arr, partition + 1, high, k - (partition + 1) + low);
+        }
+
+        // Return -1 if k is out of bounds
+        return -1;
+    }
+
+    // Helper function to find the median of a small array (up to 5 elements)
+    private static int getMedian(int arr[], int n) {
+        Arrays.sort(arr);
+        return arr[n / 2];
+    }
+
+    // Swap function to swap two elements in an array
+    private static void swap(int[] arr, int i, int index) {
+        if (arr[i] == arr[index]) {
+            return; // Skip swap if the elements are the same
+        }
+        int temp = arr[i];
+        arr[i] = arr[index];
+        arr[index] = temp;
+    }
+
+    // Partition function used in the QuickSelect algorithm
+    // It arranges elements around a pivot such that elements smaller than pivot
+    // are on the left and larger ones are on the right
+    private static int partitionPractise(int[] arr, int low, int high, int pivot) {
+
+        // Find the pivot element and move it to the end
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i] == pivot) {
+                swap(arr, i, high);
+                break;
             }
         }
-        swap(arr, i + 1, high);
-        return i + 1;
-    }
+        int index = low - 1;
+        int i = low;
 
-    private static void swap(int[] arr, int i, int j) {
-        int temp = arr[i];
-        arr[i] = arr[j];
-        arr[j] = temp;
-    }
-}
+        // Rearrange elements around the pivot
+        while (i < high) {
+            if (arr[i] < pivot) {
+                index++;
+                swap(arr, i, index);
+            }
+            i++;
+        }
+        index++;
+        swap(arr, index, high); // Place the pivot element in its correct position
 
-class QuickSelectMM{
+        return index; // Return the index of the pivot
+    }
 
 }
 
 public class Main {
     public static void main(String[] args) {
-        int k = 3;
-        int[] arr = {12, 11, 13, 5, 6, 7};
-        Algo1 algo1 = new Algo1(arr, 3);
-        algo1.printArray();
-        System.out.println("The " + k + "th smallest element is: " + algo1.getkElement());
+        MedianOfMedians finder = new MedianOfMedians();
 
+        // Example array
+        int[] arr = {7, 10, 4, 3, 20, 15};
 
-        int kthSmallest = QuickSelect.quickSelect(arr, 0, arr.length - 1, k - 1);
+        // kth smallest element to find
+        int k = 3; // For example, find the 3rd smallest element
+
+        // Call the method and store the result
+        int kthSmallest = finder.getKth(arr,0, arr.length - 1, k);
+
+        // Output the result
         System.out.println("The " + k + "th smallest element is: " + kthSmallest);
     }
 }
