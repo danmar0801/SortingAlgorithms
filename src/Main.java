@@ -1,5 +1,7 @@
 import java.util.Arrays;
 import java.util.Random;
+import java.io.FileWriter;
+import java.io.IOException;
 
 class Algo1 {
     private int[] arr; // Array to be sorted
@@ -135,14 +137,14 @@ class MedianOfMedians {
 
             // Divide the array into groups of 5 and find their medians
             for (i = 0; i < median.length - 1; i++) {
-                median[i] = getMedian(Arrays.copyOfRange(arr, 5 * i + low, 5 * i + low + 4), 5);
+                median[i] = getMedian(arr, 5 * i + low, Math.min(5 * i + low + 4, high));
             }
 
             // Handling the last group which may have less than 5 elements
             if (n % 5 == 0) {
-                median[i] = getMedian(Arrays.copyOfRange(arr, 5 * i + low, 5 * i + low + 4), 5);
+                median[i] = getMedian(arr, 5 * i + low, 5 * i + low + 4);
             } else {
-                median[i] = getMedian(Arrays.copyOfRange(arr, 5 * i + low, 5 * i + low + (n % 5)), n % 5);
+                median[i] = getMedian(arr, 5 * i + low, low + n - 1);
             }
             i++;
 
@@ -171,48 +173,53 @@ class MedianOfMedians {
     }
 
     // Helper function to find the median of a small array (up to 5 elements)
-    private static int getMedian(int[] arr, int n) {
-        Arrays.sort(arr);
-        return arr[n / 2];
+    private static int getMedian(int[] arr, int low, int high) {
+        // For small arrays, insertion sort is more efficient than full sorting
+        for (int i = low + 1; i <= high; i++) {
+            int key = arr[i];
+            int j = i - 1;
+
+            // Move elements of arr[low..i-1], that are greater than key,
+            // to one position ahead of their current position
+            while (j >= low && arr[j] > key) {
+                arr[j + 1] = arr[j];
+                j = j - 1;
+            }
+            arr[j + 1] = key;
+        }
+        return arr[low + (high - low) / 2]; // Return the middle element
     }
 
     // Swap function to swap two elements in an array
-    private static void swap(int[] arr, int i, int index) {
-        if (arr[i] == arr[index]) {
-            return; // Skip swap if the elements are the same
-        }
+    // Swap function to swap two elements in an array
+    private static void swap(int[] arr, int i, int j) {
         int temp = arr[i];
-        arr[i] = arr[index];
-        arr[index] = temp;
+        arr[i] = arr[j];
+        arr[j] = temp;
     }
 
     // Partition function used in the QuickSelect algorithm
     // It arranges elements around a pivot such that elements smaller than pivot
     // are on the left and larger ones are on the right
     private static int partitionPractise(int[] arr, int low, int high, int pivot) {
-
-        // Find the pivot element and move it to the end
-        for (int i = 0; i < arr.length; i++) {
+        int pivotIndex = -1;
+        for (int i = low; i <= high; i++) {
             if (arr[i] == pivot) {
-                swap(arr, i, high);
+                pivotIndex = i;
                 break;
             }
         }
-        int index = low - 1;
-        int i = low;
+        swap(arr, pivotIndex, high); // Move pivot to end
 
-        // Rearrange elements around the pivot
-        while (i < high) {
+        int storeIndex = low;
+        for (int i = low; i < high; i++) {
             if (arr[i] < pivot) {
-                index++;
-                swap(arr, i, index);
+                swap(arr, i, storeIndex);
+                storeIndex++;
             }
-            i++;
         }
-        index++;
-        swap(arr, index, high); // Place the pivot element in its correct position
-
-        return index; // Return the index of the pivot
+        swap(arr, storeIndex, high); // Move pivot to its final place
+        return storeIndex;
     }
 
 }
@@ -223,7 +230,7 @@ public class Main {
         int[] arr = new int[size];
         Random rand = new Random();
         for (int i = 0; i < size; i++) {
-            arr[i] = rand.nextInt(100); // Assuming the range of numbers is 0-99
+            arr[i] = rand.nextInt(6000000); // Assuming the range of numbers is 0-99
         }
         return arr;
     }
@@ -234,10 +241,8 @@ public class Main {
         }
         System.out.println();
     }
-
-
-    public static void main(String[] args) {
-        int maxArraySize = 5000;
+    public static void main(String[] args) throws IOException {
+        int maxArraySize = 6000000;
         int numberOfRuns = 10;
 
         // Arrays to store average runtimes
@@ -245,44 +250,49 @@ public class Main {
         double[] avgTimeAlgo1 = new double[maxArraySize];
         double[] avgTimeQuickSelect = new double[maxArraySize];
 
-        for (int size = 1; size <= maxArraySize; size++) {
-            long totalTimeMedianOfMedians = 0;
-            long totalTimeAlgo1 = 0;
-            long totalTimeQuickSelect = 0;
+        try (FileWriter writer = new FileWriter("algorithm_runtimes.csv")) {
+            writer.write("Array Size,MedianOfMedians,Algo1,QuickSelect\n");
 
-            for (int run = 0; run < numberOfRuns; run++) {
+            for (int n = 0, size = 1; size <= maxArraySize; n++, size = (int) Math.pow(2, n)) {
+                long totalTimeMedianOfMedians = 0;
+                long totalTimeAlgo1 = 0;
+                long totalTimeQuickSelect = 0;
                 int[] arr = generateRandomArray(size);
                 int k = new Random().nextInt(size) + 1;
 
-                // MedianOfMedians
-                long startTime = System.nanoTime();
-                MedianOfMedians.getKth(arr.clone(), 0, arr.length - 1, k);
-                totalTimeMedianOfMedians += System.nanoTime() - startTime;
+                for (int run = 0; run < numberOfRuns; run++) {
+                    // Algo1
+                    long startTime = System.nanoTime();
+                    new Algo1(arr.clone(), k).getkElement();
+                    totalTimeAlgo1 += System.nanoTime() - startTime;
+                    // MedianOfMedians
+                    long startTime2 = System.nanoTime();
+                    MedianOfMedians.getKth(arr.clone(), 0, arr.length - 1, k);
+                    totalTimeMedianOfMedians += System.nanoTime() - startTime2;
+                    // QuickSelect
+                    long startTime3 = System.nanoTime();
+                    QuickSelect.quickSelect(arr.clone(), 0, arr.length - 1, k - 1);
+                    totalTimeQuickSelect += System.nanoTime() - startTime3;
+                }
 
-                // Algo1
-                startTime = System.nanoTime();
-                new Algo1(arr.clone(), k).getkElement();
-                totalTimeAlgo1 += System.nanoTime() - startTime;
+                // Calculate averages
+                avgTimeMedianOfMedians[size - 1] = (double) totalTimeMedianOfMedians / numberOfRuns;
+                avgTimeAlgo1[size - 1] = (double) totalTimeAlgo1 / numberOfRuns;
+                avgTimeQuickSelect[size - 1] = (double) totalTimeQuickSelect / numberOfRuns;
 
-                // QuickSelect
-                startTime = System.nanoTime();
-                QuickSelect.quickSelect(arr.clone(), 0, arr.length - 1, k - 1);
-                totalTimeQuickSelect += System.nanoTime() - startTime;
+                // Print and write results for each size
+                System.out.println("Array Size: " + size + " 2^" + n);
+                System.out.println("MedianOfMedians Average Runtime: " + avgTimeMedianOfMedians[size - 1]);
+                System.out.println("Algo1 Average Runtime: " + avgTimeAlgo1[size - 1]);
+                System.out.println("QuickSelect Average Runtime: " + avgTimeQuickSelect[size - 1]);
+                System.out.println("---------------------------------");
+
+                writer.write(size + "," +
+                        avgTimeMedianOfMedians[size - 1] + "," +
+                        avgTimeAlgo1[size - 1] + "," +
+                        avgTimeQuickSelect[size - 1] + "\n");
             }
-
-            avgTimeMedianOfMedians[size - 1] = (double)totalTimeMedianOfMedians / numberOfRuns;
-            avgTimeAlgo1[size - 1] = (double)totalTimeAlgo1 / numberOfRuns;
-            avgTimeQuickSelect[size - 1] = (double)totalTimeQuickSelect / numberOfRuns;
-        }
-
-        // Print average runtimes for each algorithm
-        System.out.println("Average runtimes (in nanoseconds):");
-        for (int size = 1; size <= maxArraySize; size++) {
-            System.out.println("Array Size: " + size);
-            System.out.println("MedianOfMedians Average runtimes (in nanoseconds): " + avgTimeMedianOfMedians[size - 1]);
-            System.out.println("Algo1 Average runtimes (in nanoseconds): " + avgTimeAlgo1[size - 1]);
-            System.out.println("QuickSelect Average runtimes (in nanoseconds): " + avgTimeQuickSelect[size - 1]);
-            System.out.println("---------------------------------");
         }
     }
+
 }
